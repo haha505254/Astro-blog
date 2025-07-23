@@ -1,0 +1,96 @@
+---
+title: '歡迎來到 Astro + MDX 部落格！'
+description: '探索使用 Astro 和 MDX 建立現代化部落格的強大功能'
+pubDate: 2025-07-23
+author: 'Astro 開發者'
+heroImage: '../../assets/blog-placeholder-1.jpg'
+category: '技術'
+tags: ['astro', 'mdx', 'react', 'tailwind']
+excerpt: '了解如何使用 Astro 和 MDX 建立一個功能豐富、效能極佳的現代化部落格。本文將介紹 MDX 的強大功能和實際應用範例。'
+draft: false
+---
+
+import { Card, Alert } from '../../components/MDXComponents.jsx';
+
+歡迎來到我們全新的 Astro + MDX 部落格！這個部落格展示了結合 Astro 靜態網站生成器和 MDX（Markdown + JSX）的強大功能。
+
+## 什麼是 MDX？
+
+MDX 是一種將 JSX 組件嵌入到 Markdown 文件中的格式。這意味著你可以：
+
+- 📝 使用熟悉的 Markdown 語法撰寫內容
+- 🚀 嵌入 React 組件來增強互動性
+- 🎨 建立動態和可重用的內容區塊
+
+<Alert type="info">
+  MDX 讓你的文件活起來！你可以在 Markdown 中直接使用 React 組件。
+</Alert>
+
+## 主要特色
+
+### 1. 組件整合
+
+你可以在 MDX 文件中直接導入和使用 React 組件：
+
+<Card title="互動式卡片">
+  這是一個在 MDX 中使用的自定義 React 組件。你可以傳遞 props 並建立互動式內容！
+</Card>
+
+### 2. 程式碼高亮
+
+MDX 支援語法高亮的程式碼區塊：
+
+```jsx
+// React 組件範例
+const WelcomeMessage = ({ name }) => {
+  return (
+    <div className="p-4 bg-blue-100 rounded-lg">
+      <h3 className="text-xl font-bold">Hello, {name}!</h3>
+      <p>歡迎來到 Astro + MDX 的世界！</p>
+    </div>
+  );
+};
+```
+
+### 3. 表格支援
+
+| 功能 | Markdown | MDX | 說明 |
+|------|----------|-----|------|
+| 文字格式 | ✅ | ✅ | 標題、粗體、斜體等 |
+| 程式碼區塊 | ✅ | ✅ | 支援語法高亮 |
+| React 組件 | ❌ | ✅ | MDX 的殺手級功能 |
+| 互動性 | ❌ | ✅ | 可以加入動態內容 |
+
+## 為什麼選擇 Astro？
+
+Astro 是一個專為內容網站設計的現代靜態網站生成器：
+
+1. **零 JavaScript 預設** - 只在需要時才載入 JavaScript
+2. **內容優先** - 專為部落格和文檔網站優化
+3. **框架無關** - 支援 React、Vue、Svelte 等多種框架
+4. **極致效能** - 產生最小的 HTML 和 CSS
+
+<Alert type="success">
+  結合 Astro 和 MDX，你可以建立效能極佳且功能豐富的部落格！
+</Alert>
+
+## 開始使用
+
+要開始使用這個部落格模板，你可以：
+
+1. 複製這個專案
+2. 安裝相依套件：`npm install`
+3. 啟動開發伺服器：`npm run dev`
+4. 開始撰寫你的第一篇 MDX 文章！
+
+## 下一步
+
+探索更多功能：
+
+- 🏷️ 使用標籤系統組織你的文章
+- 📄 實作分頁功能處理大量文章
+- 🌙 深色模式支援
+- 📱 響應式設計
+- 🔍 SEO 優化
+
+感謝你閱讀這篇介紹文章。期待看到你使用 Astro + MDX 建立的精彩內容！

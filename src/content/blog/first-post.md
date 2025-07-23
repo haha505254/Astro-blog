@@ -1,8 +1,13 @@
 ---
-title: 'First post'
-description: 'Lorem ipsum dolor sit amet'
+title: '開始使用 Astro 建立部落格'
+description: '了解如何使用 Astro 快速建立一個現代化的部落格網站'
 pubDate: 'Jul 08 2022'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+author: 'Astro 學習者'
+tags: ['astro', '教學', '入門']
+category: '教學'
+excerpt: '本文將介紹如何使用 Astro 靜態網站生成器，從零開始建立一個功能完整的部落格網站。'
+draft: false
 ---
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Vitae ultricies leo integer malesuada nunc vel risus commodo viverra. Adipiscing enim eu turpis egestas pretium. Euismod elementum nisi quis eleifend quam adipiscing. In hac habitasse platea dictumst vestibulum. Sagittis purus sit amet volutpat. Netus et malesuada fames ac turpis egestas. Eget magna fermentum iaculis eu non diam phasellus vestibulum lorem. Varius sit amet mattis vulputate enim. Habitasse platea dictumst quisque sagittis. Integer quis auctor elit sed vulputate mi. Dictumst quisque sagittis purus sit amet.

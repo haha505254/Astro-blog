@@ -12,6 +12,14 @@ const blog = defineCollection({
 		pubDate: z.coerce.date(),
 		updatedDate: z.coerce.date().optional(),
 		heroImage: image().optional(),
+		// 新增欄位
+		tags: z.array(z.string()).default([]),
+		excerpt: z.string().optional(),
+		cover: image().optional(),
+		draft: z.boolean().default(false),
+		// 額外的 SEO 相關欄位
+		author: z.string().default('Anonymous'),
+		category: z.string().optional(),
 	}),
 });
 

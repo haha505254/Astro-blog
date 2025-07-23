@@ -1,68 +1,156 @@
-# Astro Starter Kit: Blog
+# Astro + MDX 部落格
 
-```sh
-npm create astro@latest -- --template blog
+一個使用 Astro、MDX、React 和 Tailwind CSS 建立的現代化部落格模板。
+
+## 🚀 特色功能
+
+- ⚡️ **極致效能** - 使用 Astro 靜態生成，幾乎零 JavaScript
+- 📝 **MDX 支援** - 在 Markdown 中使用 React 組件
+- 🎨 **Tailwind CSS** - 實用優先的 CSS 框架
+- 🌙 **深色模式** - 內建深色/淺色模式切換
+- 📱 **響應式設計** - 完美適配各種裝置
+- 🏷️ **標籤系統** - 文章分類與標籤功能
+- 📄 **草稿功能** - 支援草稿文章管理
+- 🔍 **SEO 優化** - 內建 meta 標籤和 sitemap
+- 📡 **RSS 訂閱** - 自動生成 RSS feed
+
+## 📦 專案結構
+
 ```
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/blog)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/blog)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/blog/devcontainer.json)
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-![blog](https://github.com/withastro/astro/assets/2244813/ff10799f-a816-4703-b967-c78997e8323d)
-
-Features:
-
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and OpenGraph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
+/
 ├── public/
 ├── src/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
+│   ├── assets/          # 圖片資源
+│   ├── components/      # Astro/React 組件
+│   ├── content/
+│   │   └── blog/       # 部落格文章 (MD/MDX)
+│   ├── layouts/        # 版面配置組件
+│   ├── pages/          # 路由頁面
+│   └── styles/         # 全域樣式
 ├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
+├── tailwind.config.js
+└── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## 🛠️ 快速開始
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+### 安裝
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+```bash
+npm install
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+### 開發
 
-## 🧞 Commands
+```bash
+npm run dev
+```
 
-All commands are run from the root of the project, from a terminal:
+瀏覽 http://localhost:4321 查看網站。
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+### 建置
 
-## 👀 Want to learn more?
+```bash
+npm run build
+```
 
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+### 預覽建置結果
 
-## Credit
+```bash
+npm run preview
+```
 
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+## ✍️ 撰寫文章
+
+### 建立新文章
+
+在 `src/content/blog/` 目錄下建立新的 `.md` 或 `.mdx` 檔案：
+
+```markdown
+---
+title: '文章標題'
+description: '文章描述'
+pubDate: 2025-07-23
+author: '作者名稱'
+heroImage: '../../assets/your-image.jpg'
+tags: ['標籤1', '標籤2']
+category: '分類'
+excerpt: '文章摘要'
+draft: false
+---
+
+您的文章內容...
+```
+
+### 使用 MDX
+
+MDX 文件可以導入並使用 React 組件：
+
+```mdx
+---
+title: 'MDX 範例'
+---
+
+import { Card, Alert } from '../../components/MDXComponents.jsx';
+
+# 歡迎使用 MDX！
+
+<Alert type="info">
+  這是一個在 MDX 中使用的 React 組件。
+</Alert>
+
+<Card title="互動卡片">
+  您可以在文章中加入互動式內容！
+</Card>
+```
+
+### 草稿文章
+
+將 `draft: true` 加入 frontmatter 即可將文章設為草稿：
+
+```yaml
+---
+title: '草稿文章'
+draft: true
+---
+```
+
+草稿文章不會出現在部落格列表、RSS feed 或 sitemap 中。
+
+## 🎨 自定義
+
+### 修改主題顏色
+
+編輯 `tailwind.config.js` 來自定義顏色主題。
+
+### 新增組件
+
+在 `src/components/` 目錄下建立新的 Astro 或 React 組件。
+
+### 修改版面
+
+編輯 `src/layouts/` 中的版面配置檔案。
+
+## 🚀 部署
+
+本專案可以部署到任何支援靜態網站的平台：
+
+### Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
+
+### Netlify
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start)
+
+### 其他平台
+
+參考 [Astro 部署指南](https://docs.astro.build/en/guides/deploy/)。
+
+## 📄 授權
+
+MIT License
+
+## 🤝 貢獻
+
+歡迎提交 Pull Request 或開啟 Issue！
