@@ -5,8 +5,6 @@ backend:
 media_folder: "src/assets"
 public_folder: "/src/assets"
 
-locale: 'zh'
-
 collections:
   - name: "blog"
     label: "部落格文章"
@@ -29,7 +27,7 @@ collections:
     view_groups:
       - label: "年份"
         field: pubDate
-        pattern: \d{4}
+        pattern: '\d{4}'
       - label: "分類"
         field: category
     fields:
