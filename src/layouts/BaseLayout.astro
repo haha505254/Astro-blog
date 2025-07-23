@@ -58,6 +58,9 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       window.localStorage.setItem('theme', theme);
     </script>
     
+    <!-- Netlify Identity Widget -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    
     <slot name="head" />
   </head>
   <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">

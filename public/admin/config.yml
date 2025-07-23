@@ -1,0 +1,47 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "src/assets"
+public_folder: "/src/assets"
+
+locale: 'zh_Hant'
+
+collections:
+  - name: "blog"
+    label: "部落格文章"
+    folder: "src/content/blog"
+    create: true
+    extension: 'mdx'
+    format: 'frontmatter'
+    slug: "{{slug}}"
+    preview_path: "/blog/{{slug}}"
+    editor:
+      preview: true
+    sortable_fields: ['pubDate', 'title']
+    view_filters:
+      - label: "草稿"
+        field: draft
+        pattern: true
+      - label: "已發布"
+        field: draft
+        pattern: false
+    view_groups:
+      - label: "年份"
+        field: pubDate
+        pattern: \d{4}
+      - label: "分類"
+        field: category
+    fields:
+      - {label: "標題", name: "title", widget: "string", required: true}
+      - {label: "描述", name: "description", widget: "text", required: true}
+      - {label: "發布日期", name: "pubDate", widget: "datetime", format: "YYYY-MM-DD", time_format: false, required: true}
+      - {label: "更新日期", name: "updatedDate", widget: "datetime", format: "YYYY-MM-DD", time_format: false, required: false}
+      - {label: "作者", name: "author", widget: "string", default: "Blog 作者"}
+      - {label: "標籤", name: "tags", widget: "list", default: []}
+      - {label: "分類", name: "category", widget: "string", required: false}
+      - {label: "摘要", name: "excerpt", widget: "text", required: false}
+      - {label: "封面圖片", name: "cover", widget: "image", required: false, media_folder: "/src/assets", public_folder: "../../assets"}
+      - {label: "主圖片", name: "heroImage", widget: "image", required: false, media_folder: "/src/assets", public_folder: "../../assets"}
+      - {label: "草稿", name: "draft", widget: "boolean", default: false}
+      - {label: "內容", name: "body", widget: "markdown"}

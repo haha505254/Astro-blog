@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>內容管理系統 - Astro Blog</title>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  </head>
+  <body>
+    <!-- Include the script that builds the page and powers Decap CMS -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <script>
+      // 註冊繁體中文語言包
+      CMS.registerLocale('zh_Hant', {
+        auth: {
+          login: '登入',
+          loggingIn: '登入中...',
+          loginWithNetlifyIdentity: '使用 Netlify Identity 登入',
+          logout: '登出',
+          logoutButtonLabel: '登出',
+          loggingOut: '登出中...',
+        },
+        app: {
+          header: {
+            content: '內容',
+            workflow: '工作流程',
+            media: '媒體',
+            quickAdd: '快速新增',
+          },
+          app: {
+            loading: '載入中...',
+            errorHeader: '載入 CMS 配置時發生錯誤',
+            configErrors: '配置錯誤',
+            checkConfigYml: '請檢查您的 config.yml 檔案。',
+            loadingConfig: '載入配置中...',
+            waitingBackend: '等待後端回應...',
+          },
+          notFoundPage: {
+            header: '找不到頁面',
+          },
+        },
+        collection: {
+          sidebar: {
+            collections: '集合',
+            allCollections: '所有集合',
+            searchAll: '搜尋全部',
+            searchIn: '搜尋',
+          },
+          collectionTop: {
+            sortBy: '排序方式',
+            viewAs: '檢視方式',
+            newButton: '新增 %{collectionLabel}',
+            ascending: '升序',
+            descending: '降序',
+            searchResults: '"%{searchTerm}" 的搜尋結果',
+            searchResultsInCollection: '在 %{collection} 中搜尋 "%{searchTerm}" 的結果',
+            filterBy: '篩選方式',
+            groupBy: '分組方式',
+          },
+          entries: {
+            loadingEntries: '載入條目中...',
+            cachingEntries: '快取條目中...',
+            longerLoading: '這可能需要幾分鐘',
+            noEntries: '沒有條目',
+          },
+          groups: {
+            other: '其他',
+            negateLabel: '非 %{label}',
+          },
+          defaultFields: {
+            author: {
+              label: '作者',
+            },
+            updatedOn: {
+              label: '更新於',
+            },
+          },
+        },
+        editor: {
+          editorControl: {
+            field: {
+              optional: '選填',
+            },
+          },
+          editorControlPane: {
+            widget: {
+              required: '%{fieldLabel} 為必填欄位。',
+              regexPattern: '%{fieldLabel} 不符合格式: %{pattern}。',
+              processing: '%{fieldLabel} 處理中。',
+              range: '%{fieldLabel} 必須介於 %{minValue} 和 %{maxValue} 之間。',
+              min: '%{fieldLabel} 必須至少為 %{minValue}。',
+              max: '%{fieldLabel} 必須為 %{maxValue} 或更少。',
+              rangeCount: '%{fieldLabel} 必須有 %{minCount} 到 %{maxCount} 個項目。',
+              rangeCountExact: '%{fieldLabel} 必須正好有 %{count} 個項目。',
+              rangeMin: '%{fieldLabel} 必須至少有 %{minCount} 個項目。',
+              rangeMax: '%{fieldLabel} 必須有 %{maxCount} 個或更少項目。',
+              invalidPath: `'%{path}' 不是有效的路徑`,
+              pathExists: `路徑 '%{path}' 已存在`,
+            },
+            i18n: {
+              writingInLocale: '以 %{locale} 撰寫',
+              copyFromLocale: '從其他語言複製',
+              copyFromLocaleConfirm: '您真的要從 %{locale} 語言複製資料嗎？\n所有現有內容將被覆蓋。',
+            },
+          },
+          editor: {
+            onLeavePage: '您確定要離開此頁面嗎？',
+            onUpdatingWithUnsavedChanges: '您有未儲存的變更，請在更新狀態前儲存。',
+            onPublishingNotReady: '請在發布前將狀態更新為「準備就緒」。',
+            onPublishingWithUnsavedChanges: '您有未儲存的變更，請在發布前儲存。',
+            onPublishing: '您確定要發布此條目嗎？',
+            onUnpublishing: '您確定要取消發布此條目嗎？',
+            onDeleteWithUnsavedChanges: '您確定要刪除此已發布的條目以及您目前的未儲存變更嗎？',
+            onDeletePublishedEntry: '您確定要刪除此已發布的條目嗎？',
+            onDeleteUnpublishedChangesWithUnsavedChanges: '這將刪除此條目的所有未發布變更以及您目前的未儲存變更。您仍要刪除嗎？',
+            onDeleteUnpublishedChanges: '此條目的所有未發布變更將被刪除。您仍要刪除嗎？',
+            loadingEntry: '載入條目中...',
+          },
+          editorInterface: {
+            toggleI18n: '切換 i18n',
+            togglePreview: '切換預覽',
+            toggleScrollSync: '同步捲動',
+          },
+          editorToolbar: {
+            publishing: '發布中...',
+            publish: '發布',
+            published: '已發布',
+            unpublish: '取消發布',
+            duplicate: '複製',
+            unpublishing: '取消發布中...',
+            publishAndCreateNew: '發布並建立新條目',
+            publishAndDuplicate: '發布並複製',
+            deleteEntry: '刪除條目',
+            saving: '儲存中...',
+            save: '儲存',
+            statusInfoTooltipDraft: '條目狀態設為草稿。要完成並提交審核，請將狀態設為「審核中」',
+            statusInfoTooltipInReview: '條目正在審核中，無需進一步操作。但您仍可在審核時進行其他變更。',
+            deleting: '刪除中...',
+            updating: '更新中...',
+            status: '狀態: %{status}',
+            backCollection: '在 %{collectionLabel} 集合中撰寫',
+            unsavedChanges: '未儲存的變更',
+            changesSaved: '變更已儲存',
+            draft: '草稿',
+            inReview: '審核中',
+            ready: '準備就緒',
+            publishNow: '立即發布',
+            deployPreviewPendingButtonLabel: '檢查預覽',
+            deployPreviewButtonLabel: '檢視預覽',
+            deployButtonLabel: '檢視線上版本',
+            discardChanges: '捨棄變更',
+            discardChangesTitle: '捨棄變更',
+            discardChangesBody: '您確定要捨棄未儲存的變更嗎？',
+          },
+          editorWidgets: {
+            markdown: {
+              bold: '粗體',
+              italic: '斜體',
+              strikethrough: '刪除線',
+              code: '程式碼',
+              codeBlock: '程式碼區塊',
+              insertCodeBlock: '插入程式碼區塊',
+              link: '連結',
+              insertLink: '插入連結',
+              paragraph: '段落',
+              headings: '標題',
+              quote: '引用',
+              insertQuote: '插入引用',
+              bulletedList: '項目符號清單',
+              numberedList: '編號清單',
+              addComponent: '新增元件',
+              richText: '富文本',
+              markdown: 'Markdown',
+            },
+            image: {
+              choose: '選擇圖片',
+              chooseMultiple: '選擇圖片',
+              chooseUrl: '從 URL 插入',
+              replaceUrl: '以 URL 取代',
+              promptUrl: '輸入圖片的 URL',
+              chooseDifferent: '選擇不同圖片',
+              addMore: '新增更多圖片',
+              remove: '移除圖片',
+              removeAll: '移除所有圖片',
+            },
+            file: {
+              choose: '選擇檔案',
+              chooseUrl: '從 URL 插入',
+              chooseMultiple: '選擇檔案',
+              replaceUrl: '以 URL 取代',
+              promptUrl: '輸入檔案的 URL',
+              chooseDifferent: '選擇不同檔案',
+              addMore: '新增更多檔案',
+              remove: '移除檔案',
+              removeAll: '移除所有檔案',
+            },
+            list: {
+              add: '新增 %{item}',
+              addType: '新增 %{item} 項目',
+              noValue: '無值',
+            },
+            boolean: {
+              true: '是',
+              false: '否',
+            },
+          },
+        },
+        mediaLibrary: {
+          mediaLibraryCard: {
+            draft: '草稿',
+            copy: '複製',
+            copyUrl: '複製 URL',
+            copyPath: '複製路徑',
+            copyName: '複製名稱',
+            copied: '已複製',
+          },
+          mediaLibrary: {
+            onDelete: '您確定要刪除選取的媒體嗎？',
+            fileTooLarge: '檔案太大。\n設定不允許大於 %{size} kB 的檔案。',
+          },
+          mediaLibraryModal: {
+            loading: '載入中...',
+            noResults: '無結果。',
+            noAssetsFound: '找不到資源。',
+            noImagesFound: '找不到圖片。',
+            private: '私人',
+            images: '圖片',
+            mediaAssets: '媒體資源',
+            search: '搜尋...',
+            uploading: '上傳中...',
+            upload: '上傳',
+            download: '下載',
+            deleting: '刪除中...',
+            deleteSelected: '刪除選取項目',
+            chooseSelected: '選擇選取項目',
+            dropImages: '拖放圖片以上傳',
+            dropFiles: '拖放檔案以上傳',
+          },
+        },
+        ui: {
+          default: {
+            goBackToSite: '返回網站',
+          },
+          errorBoundary: {
+            title: '錯誤',
+            details: '發生錯誤 - 請',
+            reportIt: '在 GitHub 上回報。',
+            detailsHeading: '詳細資訊',
+            privacyWarning: '開啟議題時會預先填入錯誤訊息和偵錯資料。\n請確認資訊正確並移除任何敏感資料。',
+            recoveredEntry: {
+              heading: '已復原文件',
+              warning: '請在離開前將此內容複製並貼到其他地方！',
+              copyButtonLabel: '複製到剪貼簿',
+            },
+          },
+          settingsDropdown: {
+            theme: '主題',
+            logOut: '登出',
+          },
+          toast: {
+            onFailToLoadEntries: '無法載入條目: %{details}',
+            onFailToLoadDeployPreview: '無法載入預覽: %{details}',
+            onFailToPersist: '無法保存條目: %{details}',
+            onFailToPersistMedia: '無法保存媒體: %{details}',
+            onFailToDelete: '無法刪除條目: %{details}',
+            onFailToDeleteMedia: '無法刪除媒體: %{details}',
+            onFailToUpdateStatus: '無法更新狀態: %{details}',
+            missingRequiredField: '哎呀，您遺漏了一個必填欄位。請在儲存前填寫。',
+            entrySaved: '條目已儲存',
+            entryDeleted: '條目已刪除',
+            entryPublished: '條目已發布',
+            entryUnpublished: '條目已取消發布',
+            onFailToPublishEntry: '無法發布: %{details}',
+            onFailToUnpublishEntry: '無法取消發布: %{details}',
+            entryUpdated: '條目狀態已更新',
+            onDeletePublishedEntry: '已發布的條目已刪除',
+            onDeleteUnpublishedChanges: '未發布的變更已刪除',
+            onFailToAuth: '%{details}',
+            onLoggedOut: '您已登出，請備份任何資料並再次登入',
+            onBackendDown: '後端服務發生中斷。查看 %{details} 以獲得更多資訊',
+          },
+          widgetActions: {
+            deleteTitle: '刪除 %{fieldLabel}',
+          },
+        },
+        workflow: {
+          workflow: {
+            loading: '載入編輯工作流程條目',
+            workflowHeading: '編輯工作流程',
+            newPost: '新文章',
+            description: '%{smart_count} 個條目等待審核，%{readyCount} 個準備上線。',
+            dateFormat: 'MMMM D',
+          },
+          workflowCard: {
+            lastChange: '%{date} by %{author}',
+            lastChangeNoAuthor: '%{date}',
+            lastChangeNoDate: 'by %{author}',
+            deleteChanges: '刪除變更',
+            deleteNewEntry: '刪除新條目',
+            publishChanges: '發布變更',
+            publishNewEntry: '發布新條目',
+          },
+          workflowList: {
+            onDeleteEntry: '您確定要刪除此條目嗎？',
+            onPublishingNotReadyEntry: '只有狀態為「準備就緒」的項目才能發布。請拖動卡片到「準備就緒」欄以允許發布。',
+            onPublishEntry: '您確定要發布此條目嗎？',
+            draft: '草稿',
+            pending_review: '審核中',
+            pending_publish: '準備就緒',
+            currentEntries: '%{smart_count} 個條目',
+          },
+        },
+      });
+      
+      // 初始化 CMS
+      CMS.init();
+    </script>
+  </body>
+</html>
