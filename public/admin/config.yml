@@ -5,7 +5,7 @@ backend:
 media_folder: "src/assets"
 public_folder: "/src/assets"
 
-locale: 'zh_Hant'
+locale: 'zh'
 
 collections:
   - name: "blog"
