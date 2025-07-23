@@ -5,6 +5,8 @@ backend:
 media_folder: "src/assets"
 public_folder: "/src/assets"
 
+locale: 'zh-Hant'
+
 collections:
   - name: "blog"
     label: "部落格文章"
