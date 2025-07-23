@@ -211,6 +211,19 @@ const latestPosts = allPosts
           });
         }
       });
+      
+      // 處理邀請 token
+      window.netlifyIdentity.on("invite", () => {
+        console.log("處理邀請...");
+      });
+      
+      // 處理錯誤
+      window.netlifyIdentity.on("error", err => console.error("Identity 錯誤:", err));
+    }
+    
+    // 檢查 URL 中的 invite_token 並自動開啟 Identity Widget
+    if (window.location.hash && window.location.hash.includes('invite_token')) {
+      window.netlifyIdentity.open();
     }
   </script>
 </BaseLayout>

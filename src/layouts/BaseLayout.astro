@@ -60,6 +60,14 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     
     <!-- Netlify Identity Widget -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script>
+      // 初始化 Netlify Identity
+      window.addEventListener('load', function() {
+        if (window.netlifyIdentity) {
+          window.netlifyIdentity.init();
+        }
+      });
+    </script>
     
     <slot name="head" />
   </head>
