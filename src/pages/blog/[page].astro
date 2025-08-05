@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import FormattedDate from '../../components/FormattedDate.astro';
+import { Image } from 'astro:assets';
+import Pagination from '../../components/Pagination.astro';
+
+export async function getStaticPaths({ paginate }) {
+  // 獲取所有文章並過濾草稿
+  const allPosts = await getCollection('blog');
+  const posts = allPosts
+    .filter(post => !post.data.draft)
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+  
+  // 使用 Astro 的分頁功能，每頁顯示 6 篇文章
+  return paginate(posts, { pageSize: 6 });
+}
+
+const { page } = Astro.props;
+
+// 計算閱讀時間（粗略估計）
+function calculateReadingTime(content: string): number {
+  const wordsPerMinute = 200;
+  const wordCount = content.split(/\s+/).length;
+  return Math.ceil(wordCount / wordsPerMinute);
+}
+---
+
+<BaseLayout title="部落格文章" description="探索我們的最新文章和想法">
+  <main class="flex-grow">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+          部落格文章
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400">
+          探索最新的技術文章、教學和心得分享
+        </p>
+      </div>
+
+      <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto">
+        {page.data.map((post, index) => {
+          const displayImage = post.data.cover || post.data.heroImage;
+          const isFirstPost = index === 0 && page.currentPage === 1;
+          
+          return (
+            <article class={`group ${isFirstPost ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+              <a href={`/blog/${post.slug}/`} class="block">
+                <div class={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden ${isFirstPost ? 'md:flex' : ''}`}>
+                  {displayImage && (
+                    <div class={`relative overflow-hidden ${isFirstPost ? 'md:w-1/2' : ''}`}>
+                      <Image 
+                        class={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${isFirstPost ? 'h-full' : 'h-48'}`}
+                        width={isFirstPost ? 800 : 400} 
+                        height={isFirstPost ? 400 : 200} 
+                        src={displayImage} 
+                        alt={post.data.title}
+                      />
+                      {post.data.category && (
+                        <span class="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                          {post.data.category}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div class={`p-6 ${isFirstPost ? 'md:w-1/2' : ''}`}>
+                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      <FormattedDate date={post.data.pubDate} />
+                      <span class="mx-2">·</span>
+                      <span>{post.data.author || 'Anonymous'}</span>
+                    </div>
+                    
+                    <h2 class={`font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${isFirstPost ? 'text-2xl md:text-3xl' : 'text-xl'}`}>
+                      {post.data.title}
+                    </h2>
+                    
+                    <p class="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                      {post.data.excerpt || post.data.description}
+                    </p>
+                    
+                    {post.data.tags && post.data.tags.length > 0 && (
+                      <div class="flex flex-wrap gap-2">
+                        {post.data.tags.slice(0, 3).map((tag) => (
+                          <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded">
+                            #{tag}
+                          </span>
+                        ))}
+                        {post.data.tags.length > 3 && (
+                          <span class="text-xs text-gray-500 dark:text-gray-400">
+                            +{post.data.tags.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </a>
+            </article>
+          );
+        })}
+      </div>
+
+      {page.total === 0 && (
+        <div class="text-center py-12">
+          <p class="text-gray-600 dark:text-gray-400 text-lg">
+            目前還沒有發布任何文章。
+          </p>
+        </div>
+      )}
+
+      <!-- 分頁組件 -->
+      <Pagination 
+        currentPage={page.currentPage} 
+        totalPages={page.lastPage} 
+        baseUrl="/blog" 
+      />
+    </div>
+  </main>
+
+  <footer class="bg-gray-50 dark:bg-gray-800 mt-16">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="text-center text-gray-600 dark:text-gray-400">
+        <p>&copy; {new Date().getFullYear()} My Blog. Built with Astro & MDX.</p>
+      </div>
+    </div>
+  </footer>
+</BaseLayout>

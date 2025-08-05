@@ -13,7 +13,7 @@ const displayImage = post.data.cover || post.data.heroImage;
 ---
 
 <article class={`group ${featured ? 'md:col-span-2 lg:col-span-3' : ''}`}>
-  <a href={`/blog/${post.id}/`} class="block">
+  <a href={`/blog/${post.slug}/`} class="block">
     <div class={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden ${featured ? 'md:flex' : ''}`}>
       {displayImage && (
         <div class={`relative overflow-hidden ${featured ? 'md:w-1/2' : ''}`}>
