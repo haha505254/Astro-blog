@@ -42,10 +42,11 @@ function calculateReadingTime(content: string): number {
         {page.data.map((post, index) => {
           const displayImage = post.data.cover || post.data.heroImage;
           const isFirstPost = index === 0 && page.currentPage === 1;
+          const postSlug = post.slug || post.id;
           
           return (
             <article class={`group ${isFirstPost ? 'md:col-span-2 lg:col-span-3' : ''}`}>
-              <a href={`/blog/${post.slug}/`} class="block">
+              <a href={`/blog/${postSlug}/`} class="block">
                 <div class={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden ${isFirstPost ? 'md:flex' : ''}`}>
                   {displayImage && (
                     <div class={`relative overflow-hidden ${isFirstPost ? 'md:w-1/2' : ''}`}>

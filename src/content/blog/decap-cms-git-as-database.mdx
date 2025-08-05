@@ -1,0 +1,277 @@
+---
+title: 解密 Decap CMS：當 Git 成為你的資料庫，一場靜態網站的革命
+description: 深入探索 Decap CMS 如何巧妙地將 Git Repository 變成資料庫，透過 Netlify Identity 和 Git Gateway 實現無後端的內容管理系統
+pubDate: 2025-07-28
+updatedDate: 2025-08-06
+author: Lin
+tags: ['Decap CMS', 'Netlify CMS', 'JAMstack', 'Git', '靜態網站', 'Headless CMS', 'Netlify Identity', '內容管理']
+category: 技術深度解析
+excerpt: 揭開 Decap CMS 的神秘面紗：如何在沒有傳統資料庫的情況下，實現完整的內容管理功能？這是一個關於 Git、身份驗證和現代網站架構的技術故事
+draft: false
+---
+
+## 📝 前言
+
+你是否曾想過，能否在擁有一個功能齊全、介面友善的內容管理系統（CMS）的同時，徹底擺脫傳統資料庫的維護惡夢？
+
+**Decap CMS**（前身為 Netlify CMS）正是為此而生。它的運作原理既優雅又強大，其秘密就在於一個革命性的理念：**將 Git Repository 本身作為你的資料庫**。
+
+<br />
+
+---
+
+<br />
+
+## 🎯 核心哲學：檔案即內容，Git 即資料庫
+
+### 顛覆傳統的儲存模式
+
+傳統 CMS 將文章、作者、分類等資訊儲存在 MySQL 或 PostgreSQL 這類資料庫的資料表（Table）中。而 Decap CMS 則徹底顛覆了這個模式。
+
+<br />
+
+### 內容儲存的新典範
+
+**檔案系統即是資料結構：**
+
+```
+src/content/blog/
+├── nodejs-version-nvm-journey.mdx     # 一篇文章 = 一個檔案
+├── playwright-black-screenshot.mdx    # 一筆資料 = 一個檔案
+└── wsl-permission-sudo-docker.mdx    # 無需資料表！
+```
+
+<br />
+
+### CRUD 操作的 Git 映射
+
+所有對內容的「增刪改查（CRUD）」操作，都直接對應到最基礎的 Git 指令：
+
+```bash
+# 新增 (Create)
+git add new-post.mdx && git commit -m "Add new post"
+
+# 讀取 (Read)
+cat new-post.mdx
+
+# 更新 (Update)
+vim new-post.mdx && git commit -m "Update post"
+
+# 刪除 (Delete)
+git rm new-post.mdx && git commit -m "Remove post"
+```
+
+<br />
+
+### 💡 這帶來的好處是巨大的
+
+- **版本控制內建**：每一次修改都享有 Git 帶來的完整版本控制
+- **輕鬆追蹤變更**：可以比較不同版本，一鍵回滾到任何歷史狀態
+- **備份即 Clone**：你的「資料庫備份」，就是一次簡單的 `git clone`
+- **內容即程式碼**：內容不僅僅是資料，它本身就是程式碼的一部分
+
+<br />
+
+---
+
+<br />
+
+## 🔐 安全雙雄：身份驗證的魔法
+
+### 核心問題
+
+一個在瀏覽器中運行的 JavaScript 應用，如何能在沒有暴露使用者密碼的情況下，安全地對受保護的 GitHub Repository 進行寫入操作？
+
+答案在於兩個關鍵服務的精妙協作。
+
+<br />
+
+### Netlify Identity（護照辦事處）
+
+這是一個由 Netlify 提供的雲端身份認證服務。當你登入後台時，你面對的就是它。
+
+**它負責：**
+- 管理使用者帳密
+- 處理第三方登入（如 Google/GitHub OAuth）
+- 驗證成功後，發給你一張具備時效性、經加密的數位護照——**JWT (JSON Web Token)**
+
+<br />
+
+### Git Gateway（外交授權關口）
+
+這是一座連接你的網站和 GitHub Repository 的橋樑。
+
+**運作機制：**
+1. 它本身不儲存你的密碼
+2. 檢查你遞交的 JWT 護照是否有效
+3. 驗證通過後，使用**預先設定的 Personal Access Token**代替你執行 Git 操作
+
+> **重要細節**：Git Gateway 需要你在 Netlify 後台預先設定 GitHub/GitLab 的 Personal Access Token，這個 token 具有寫入 repository 的權限。
+
+<br />
+
+### 💡 核心安全原則
+
+絕不暴露你的長期憑證（GitHub 密碼或 Personal Access Token），只使用有時效性的短期通行證（JWT Token）。這大大降低了憑證洩漏的風險。
+
+<br />
+
+---
+
+<br />
+
+## 🔄 完整工作流程：從登入到網站上線
+
+讓我們追蹤一次完整的內容發布流程：
+
+### 1. 登入階段
+使用者訪問網站的 `/admin` 路徑，觸發 Netlify Identity 登入視窗。
+
+### 2. 驗證階段
+使用者輸入帳密，Netlify Identity 在雲端驗證，成功後將 JWT Token 回傳給瀏覽器。
+
+### 3. 編輯階段
+使用者在 Decap CMS 介面中編輯文章並點擊「儲存」。
+
+### 4. 授權階段
+Decap CMS 的前端 JavaScript（基於 **Preact** 框架）帶著 JWT Token，向 Git Gateway 發出請求。
+
+### 5. 執行階段
+Git Gateway 驗證 Token 有效後，使用預設的 Personal Access Token 向 GitHub Repository 執行：
+```bash
+git add [file]
+git commit -m "Update content"
+git push origin main
+```
+
+### 6. 部署階段
+Netlify（或其他支援 Git 的託管平台）偵測到 Repository 有新的 commit，自動觸發建置（Build）流程。
+
+### 7. 上線階段
+網站被重新生成為靜態檔案，並部署到全球 CDN 網路上。
+
+<br />
+
+---
+
+<br />
+
+## 🏗️ 架構之美：這就是 JAMstack
+
+Decap CMS 的運作原理，是現代網頁開發 **JAMstack** 架構的完美體現。
+
+### JavaScript
+前端的互動性由 JavaScript 驅動（Decap CMS 使用輕量的 Preact 框架）。
+
+### APIs
+所有動態或伺服器端的功能都透過可複用的 API 處理：
+- Netlify Identity API（身份驗證）
+- Git Gateway API（Git 操作代理）
+
+### Markup
+內容以結構化的標記語言（Markdown/MDX）儲存，並在建置時預先渲染成 HTML。
+
+<br />
+
+### 實際配置範例
+
+```yaml
+# /public/admin/config.yml
+backend:
+  name: git-gateway       # 使用 Git Gateway 而非直接連 GitHub
+  branch: main           # 操作的分支
+
+media_folder: "src/assets"
+public_folder: "/src/assets"
+
+collections:
+  - name: "blog"
+    label: "部落格文章"
+    folder: "src/content/blog"    # 文章儲存位置
+    create: true                  # 允許新增
+    extension: 'mdx'               # 檔案格式
+    format: 'frontmatter'          # metadata 格式
+    fields:
+      - {label: "標題", name: "title", widget: "string"}
+      - {label: "內容", name: "body", widget: "markdown"}
+```
+
+<br />
+
+---
+
+<br />
+
+## ⚠️ 系統限制與注意事項
+
+### 需要網路連線
+Decap CMS **無法離線工作**，必須有網路連線才能：
+- 驗證身份（連接 Netlify Identity）
+- 操作 Git（透過 Git Gateway）
+
+### 本地開發限制
+在開發模式（`npm run dev`）中，`/admin` 路徑無法直接訪問。需要：
+```bash
+npm run build    # 先建置
+npm run preview  # 再預覽
+```
+
+### 大檔案處理
+- 圖片建議使用 Git LFS 或 CDN 服務
+- 影片等大型媒體檔案不適合直接存在 Git 中
+
+### 同時編輯風險
+多人同時編輯可能造成 Git 衝突，需要手動解決。
+
+<br />
+
+---
+
+<br />
+
+## 🎭 比喻總結：全自動化出版社
+
+這個架構如同一個全自動化出版社：
+
+- **編輯（使用者）**：在乾淨的編輯室（CMS 介面）完成稿件
+- **檔案庫（Git）**：稿件自動存入版本控制的檔案庫
+- **印刷廠（Netlify Build）**：立刻開始印刷
+- **發行網（CDN）**：全球發行
+
+整個流程無需傳統的後端伺服器和資料庫，帶來了：
+- ✅ 極致的安全性（無資料庫可被駭）
+- ✅ 卓越的性能（純靜態檔案）
+- ✅ 絕佳的開發者體驗（Git-based workflow）
+
+<br />
+
+---
+
+<br />
+
+## 📚 總結與展望
+
+Decap CMS 展示了一種全新的內容管理思維：
+
+### 核心創新
+1. **Git 即資料庫**：利用版本控制系統作為內容儲存
+2. **無後端架構**：純前端應用配合雲端服務
+3. **安全優先**：短期 token 而非長期憑證
+4. **開發者友善**：內容即程式碼，享受 Git 的所有好處
+
+### 適用場景
+- 部落格和文件網站
+- 產品頁面和行銷網站
+- 需要版本控制的內容平台
+- 追求極致性能的靜態網站
+
+### 未來趨勢
+隨著 JAMstack 的普及，越來越多的網站將採用這種「Git-based CMS」的模式。它不只是一個工具，更代表了現代網站開發的哲學：**簡單、安全、高效**。
+
+<br />
+
+---
+
+<br />
+
+*如果你正在尋找一個不需要資料庫、易於維護、又具備完整功能的 CMS 解決方案，Decap CMS 絕對值得一試。歡迎分享你的使用經驗！*

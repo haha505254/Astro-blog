@@ -10,10 +10,11 @@ interface Props {
 
 const { post, featured = false } = Astro.props;
 const displayImage = post.data.cover || post.data.heroImage;
+const postSlug = post.slug || post.id;
 ---
 
 <article class={`group ${featured ? 'md:col-span-2 lg:col-span-3' : ''}`}>
-  <a href={`/blog/${post.slug}/`} class="block">
+  <a href={`/blog/${postSlug}/`} class="block">
     <div class={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden ${featured ? 'md:flex' : ''}`}>
       {displayImage && (
         <div class={`relative overflow-hidden ${featured ? 'md:w-1/2' : ''}`}>
@@ -22,7 +23,9 @@ const displayImage = post.data.cover || post.data.heroImage;
             width={featured ? 800 : 400} 
             height={featured ? 400 : 200} 
             src={displayImage} 
-            alt={post.data.title}
+            alt={`封面圖片：${post.data.title}`}
+            loading="lazy"
+            decoding="async"
           />
           {post.data.category && (
             <span class="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">

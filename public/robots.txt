@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Disallow admin areas
+Disallow: /admin/
+
+# Allow search engines to access CSS and JS files
+Allow: /_astro/
+Allow: /fonts/
+
+# Sitemap location
+Sitemap: https://elaborate-alfajores-21aa14.netlify.app/sitemap-index.xml
