@@ -1,0 +1,303 @@
+---
+title: 從崩潰到重構：Vue 編輯器戰術圖功能的四個階段性突破
+description: 記錄在 Vue.js 羽球論壇專案中實作 TipTap 編輯器自訂戰術圖元件的完整歷程，從插入失敗到狀態同步的深層除錯
+pubDate: 2025-08-11
+author: Lin
+tags: ['Vue', 'TipTap', '編輯器', '狀態管理', '重構', '除錯經驗', 'JavaScript']
+category: 技術筆記
+excerpt: 當編輯器的自訂元件變成純文字，當修改內容總是遺失，當更新按鈕毫無反應...這是一個關於 TipTap 編輯器深層機制和 Vue 狀態管理的踩坑實錄
+draft: false
+---
+
+import { Alert, Card } from '../../components/MDXComponents.jsx';
+
+## 📝 前言
+
+在開發羽球論壇的文章編輯器時，我想加入一個特別的功能：戰術圖編輯器。使用者可以在文章中插入羽球場地圖，標記球員位置和移動路線。
+
+這聽起來不難，對吧？但當我滿懷信心地開始實作時，卻掉進了一個又一個的坑洞。從元件變成純文字，到修改內容神秘消失，每個問題都讓我更深入地理解了 TipTap 編輯器和 Vue 的運作機制。
+
+<br />
+
+---
+
+<br />
+
+## 🔴 階段一：當自訂元件變成一行無法點擊的純文字
+
+### 🤔 發生了什麼？
+
+我興高采烈地在編輯器中插入了我精心設計的戰術圖元件，期待看到一個漂亮的區塊，裡面有標題、編輯按鈕和刪除按鈕。
+
+結果呢？螢幕上只出現了一行灰色的文字：`[戰術圖：進攻路線分析]`
+
+沒有按鈕，沒有互動，就只是...文字。
+
+<Alert type="warning">
+TipTap 編輯器為了安全性，會自動過濾掉它不認識的 HTML 元素。如果你沒有正式註冊你的自訂元件，它就會被當作不安全的內容移除。
+</Alert>
+
+### 💡 原因剖析
+
+問題出在 TipTap 的安全機制上。就像一個嚴格的保全，它只允許「有通行證」的元素進入編輯器。我的自訂 `<div>` 標籤？抱歉，不在白名單上。
+
+編輯器的處理方式很簡單粗暴：移除標籤，只留下最內層的文字內容。
+
+### 🛠️ 解決方案
+
+我需要為戰術圖元件申請一張「官方通行證」：
+
+```javascript
+// 建立 TipTap 擴展
+const TacticalDiagram = Node.create({
+  name: 'tacticalDiagram',
+  group: 'block',
+  atom: true,
+  
+  addAttributes() {
+    return {
+      diagramData: { default: null },
+      title: { default: '未命名戰術圖' }
+    }
+  },
+  
+  parseHTML() {
+    return [{
+      tag: 'div[data-type="tactical-diagram"]'
+    }]
+  },
+  
+  renderHTML({ HTMLAttributes }) {
+    return ['div', { 
+      'data-type': 'tactical-diagram',
+      ...HTMLAttributes 
+    }]
+  },
+  
+  addNodeView() {
+    return VueNodeViewRenderer(TacticalDiagramComponent)
+  }
+})
+```
+
+有了這個擴展，編輯器終於認識我的元件了。插入後，它正確地顯示為一個可互動的區塊。
+
+<br />
+
+---
+
+<br />
+
+## 🔴 階段二：當程式碼架構變成一團亂麻
+
+### 🤔 發生了什麼？
+
+功能是能動了，但看看我的程式碼...父元件 `NewPostView` 竟然有 200 多行在處理編輯器的內部邏輯！
+
+它在做什麼？解析 HTML、尋找特定標籤、修改屬性、重新組裝...簡直就像一個不懂授權的老闆，什麼都要親自動手。
+
+### 💡 原因剖析
+
+這是典型的「職責不清」問題：
+
+- **父元件越界**：它不應該知道編輯器的內部實作細節
+- **脆弱的字串操作**：直接操作 HTML 字串，一旦編輯器升級就可能崩潰
+- **維護噩夢**：修改一個小功能要同時改動多個地方
+
+### 🛠️ 解決方案
+
+重構時間！我採用了「封裝」策略：
+
+```javascript
+// RichTextEditor.vue - 提供清晰的 API
+export default {
+  methods: {
+    // 對外暴露的簡潔介面
+    insertDiagram(diagramData) {
+      const { $pos } = this.editor.state.selection
+      this.editor.chain()
+        .insertContentAt($pos.pos, {
+          type: 'tacticalDiagram',
+          attrs: { diagramData, title: diagramData.title }
+        })
+        .focus()
+        .run()
+    },
+    
+    updateDiagram(position, newData) {
+      // 內部複雜邏輯完全封裝
+      this.editor.chain()
+        .updateNodeAt(position, { diagramData: newData })
+        .focus()
+        .run()
+    }
+  }
+}
+
+// NewPostView.vue - 父元件變得超級簡潔
+handleInsertDiagram(data) {
+  this.$refs.editor.insertDiagram(data)
+}
+```
+
+<Card>
+**重構成果**：父元件程式碼減少了 80%，編輯器元件變成了一個專業的、可重用的模組。
+</Card>
+
+<br />
+
+---
+
+<br />
+
+## 🔴 階段三：當編輯的內容總是神秘消失
+
+### 🤔 發生了什麼？
+
+這個問題讓我抓狂了好久。我點擊編輯按鈕，修改戰術圖，按下更新...然後什麼都沒發生。
+
+更詭異的是，如果我在修改戰術圖之前，先在文章其他地方打幾個字，更新就會徹底失敗。
+
+### 💡 原因剖析
+
+這是一個關於「時機」的問題：
+
+1. **點擊編輯時**：程式記錄戰術圖在第 50 個字元的位置
+2. **編輯過程中**：使用者在文章開頭加了 10 個字
+3. **按下更新時**：戰術圖實際上已經在第 60 個字元，但程式還在找第 50 個字元
+4. **結果**：找不到目標，更新失敗
+
+<Alert type="info">
+在富文本編輯器中，元素的位置是動態的。任何內容變更都可能改變其他元素的位置索引。
+</Alert>
+
+### 🛠️ 解決方案
+
+改用「延遲查詢」策略：
+
+```javascript
+// 不再傳遞固定位置，而是傳遞查詢函式
+openEditDialog(diagramNode) {
+  this.editingDiagram = {
+    data: diagramNode.attrs.diagramData,
+    getPosition: () => {
+      // 每次呼叫時即時查詢最新位置
+      const pos = this.findNodePosition('tacticalDiagram', diagramNode.attrs.id)
+      return pos
+    }
+  }
+}
+
+// 更新時才執行查詢
+updateDiagram() {
+  const currentPos = this.editingDiagram.getPosition()
+  this.editor.updateNodeAt(currentPos, this.editingDiagram.data)
+}
+```
+
+<br />
+
+---
+
+<br />
+
+## 🔴 階段四：最深層的魔王 - Vue Proxy 與狀態同步
+
+### 🤔 發生了什麼？
+
+這是最詭異的 bug。修改戰術圖後：
+- 更新按鈕沒反應
+- Modal 不會關閉
+- 重新打開能看到修改
+- 但發表文章時，修改全部遺失
+
+我甚至開始懷疑是不是電腦中邪了。
+
+### 💡 原因剖析
+
+這個問題揭露了前端框架的深層機制：
+
+<Card>
+**問題核心**：Vue 和 TipTap 對「什麼是新資料」的認知不同。
+
+- **Vue 的觀點**：只要資料內容變了，就是有更新
+- **TipTap 的觀點**：只有收到不同的物件實例，才算有更新
+</Card>
+
+當我們編輯戰術圖時：
+
+1. Modal 和編輯器共享同一個資料物件
+2. 修改直接發生在這個共享物件上
+3. 更新時，TipTap 收到的還是同一個物件（記憶體地址相同）
+4. TipTap：「這不是我已經有的物件嗎？沒什麼要更新的。」
+
+更糟的是，Vue 的 Proxy 包裝讓 TipTap 更加困惑。
+
+### 🛠️ 終極解決方案
+
+使用深拷貝，確保每次都是全新的物件：
+
+```javascript
+// 編輯時：創建完全獨立的副本
+openEditDialog(diagramData) {
+  // JSON 序列化可以：
+  // 1. 創建全新的物件實例
+  // 2. 移除 Vue 的 Proxy 包裝
+  this.editingData = JSON.parse(JSON.stringify(diagramData))
+}
+
+// 更新時：再次創建新副本
+updateDiagram() {
+  const freshData = JSON.parse(JSON.stringify(this.editingData))
+  
+  this.editor.chain()
+    .updateNodeAt(position, { 
+      diagramData: freshData  // TipTap 收到全新物件，確定會更新
+    })
+    .focus()
+    .run()
+}
+```
+
+<Alert type="success">
+**關鍵認知**：在處理複雜的狀態管理時，物件的「身份」（引用）和「內容」（值）同樣重要。有時候，一個全新的身份比修改的內容更能觸發正確的更新。
+</Alert>
+
+<br />
+
+---
+
+<br />
+
+## 🎯 總結：四個關鍵學習
+
+這次的開發歷程讓我深刻理解了幾個重要概念：
+
+### 1. **編輯器的安全機制**
+TipTap 不是一個簡單的文字框，它有嚴格的內容控制機制。自訂元件必須正式註冊。
+
+### 2. **清晰的職責劃分**
+父子元件之間應該透過明確的 API 溝通，而不是互相深入對方的內部邏輯。
+
+### 3. **動態內容的位置管理**
+在富文本編輯器中，永遠不要假設位置是固定的。使用即時查詢，而不是快取位置。
+
+### 4. **框架間的資料格式差異**
+不同框架/函式庫對資料更新的判斷標準不同。必要時，使用深拷貝確保資料的「全新性」。
+
+<br />
+
+## 💭 後記
+
+每個 bug 都是一個學習機會。這次的經歷讓我不只是解決了問題，更重要的是理解了問題背後的原理。
+
+下次當你遇到類似的問題時，記得：
+- 不要只盯著錯誤訊息，要理解系統的運作機制
+- 不要急著寫 workaround，要找到問題的根源
+- 不要害怕重構，好的架構會讓後續開發事半功倍
+
+編程的路上，每個坑都是成長的養分。今天的挫折，就是明天的經驗值。
+
+---
+
+*如果你也遇過類似的問題，或有更好的解決方案，歡迎留言討論！*
