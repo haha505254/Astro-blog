@@ -23,9 +23,36 @@ export const Mermaid = ({ chart }) => {
         primaryBorderColor: '#1d4ed8',
         secondaryBorderColor: '#d1d5db',
         tertiaryBorderColor: '#e5e7eb',
-        fontSize: '14px',
+        fontSize: '16px',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial',
       },
       securityLevel: 'loose',
+      sequence: {
+        diagramMarginX: 50,
+        diagramMarginY: 30,
+        actorMargin: 50,
+        width: 200,
+        height: 65,
+        boxMargin: 10,
+        boxTextMargin: 5,
+        noteMargin: 10,
+        messageMargin: 35,
+        mirrorActors: true,
+        bottomMarginAdj: 1,
+        useMaxWidth: false,
+        rightAngles: false,
+        showSequenceNumbers: false,
+        actorFontSize: '16px',
+        actorFontFamily: 'ui-sans-serif, system-ui',
+        actorFontWeight: 400,
+        noteFontSize: '14px',
+        noteFontFamily: 'ui-sans-serif, system-ui',
+        noteFontWeight: 400,
+        noteAlign: 'center',
+        messageFontSize: '16px',
+        messageFontFamily: 'ui-sans-serif, system-ui',
+        messageFontWeight: 400,
+      },
     });
 
     // 渲染圖表
@@ -36,11 +63,14 @@ export const Mermaid = ({ chart }) => {
   }, [chart]);
 
   return (
-    <div className="my-8 flex justify-center">
-      <div 
-        ref={ref}
-        className="mermaid bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
-      />
+    <div className="my-8 overflow-x-auto">
+      <div className="flex justify-center min-w-fit">
+        <div 
+          ref={ref}
+          className="mermaid bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
+          style={{ minWidth: '800px', fontSize: '16px' }}
+        />
+      </div>
     </div>
   );
 };
