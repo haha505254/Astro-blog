@@ -1,3 +1,18 @@
 ---
-return Astro.redirect('/blog/1');
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import InfiniteScrollBlog from '../../components/InfiniteScrollBlog';
 ---
+
+<BaseLayout title="部落格文章" description="探索我們的最新文章和想法">
+  <main class="flex-grow">
+    <InfiniteScrollBlog client:load />
+  </main>
+
+  <footer class="bg-gray-50 dark:bg-gray-800 mt-16">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="text-center text-gray-600 dark:text-gray-400">
+        <p>&copy; {new Date().getFullYear()} Lin's Murmur</p>
+      </div>
+    </div>
+  </footer>
+</BaseLayout>

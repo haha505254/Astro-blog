@@ -1,0 +1,310 @@
+---
+title: 'Astro 無限滾動除錯實錄：當靜態遇上動態，一場架構選擇的挑戰'
+description: '從無限滾動重複載入的表象，深入探究 Astro SSG 與 SSR 的本質差異。這不是程式碼的錯，而是架構理解的盲點'
+pubDate: 2025-08-14
+author: 'Lin'
+category: '技術筆記'
+tags: ['Astro', '無限滾動', 'SSG', 'SSR', 'API Routes', '除錯經驗', 'Hybrid Mode']
+excerpt: '花了數小時修改參數解析邏輯，最後發現問題根本不在程式碼。當 API 永遠返回第一頁時，真相藏在 Astro 的渲染模式裡'
+draft: false
+---
+
+import { Alert, Card } from '../../components/MDXComponents.jsx';
+
+## 序章：一個看似簡單的需求
+
+「我不想用分頁，現在不是流行往下滑會自動加載嗎？」
+
+就是這麼一個簡單的需求，開啟了一場長達數小時的除錯之旅。從 `/blog/1` 到無限滾動，理論上應該很簡單：建立 API、實作 Intersection Observer、搞定。
+
+但當第二頁載入的內容和第一頁一模一樣時，我知道事情沒那麼簡單。
+
+## 第一章：症狀浮現 - 無限滾動的無限重複
+
+### 初始實作
+
+創建了一個標準的 API 端點：
+
+```typescript
+// src/pages/api/posts.json.ts
+export const GET: APIRoute = async ({ url }) => {
+  const page = url.searchParams.get('page');
+  const limit = url.searchParams.get('limit');
+  
+  // 分頁邏輯
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedPosts = posts.slice(startIndex, endIndex);
+  
+  return new Response(JSON.stringify({
+    posts: paginatedPosts,
+    currentPage: page,
+    hasMore: endIndex < posts.length
+  }));
+};
+```
+
+React 組件使用 Intersection Observer：
+
+```tsx
+// InfiniteScrollBlog.tsx
+const loadPosts = async () => {
+  const response = await fetch(`/api/posts.json?page=${page}&limit=6`);
+  const data = await response.json();
+  setPosts(prev => [...prev, ...data.posts]);
+};
+```
+
+### 詭異的現象
+
+當滾動到底部時：
+- ✅ API 被正確呼叫
+- ✅ 網路請求顯示 `?page=2&limit=6`
+- ❌ 返回的卻是第一頁的內容
+- ❌ `currentPage` 永遠是 1
+
+<Alert type="warning">
+症狀：明明請求第二頁，API 卻總是返回第一頁的資料
+</Alert>
+
+## 第二章：錯誤的除錯方向 - 在參數解析上繞圈
+
+### 嘗試 1：改變參數獲取方式
+
+```typescript
+// 嘗試各種方式獲取參數
+const pageParam = url.searchParams.get('page');
+const page = pageParam ? parseInt(pageParam) : 1;
+
+// 改成
+const page = parseInt(url.searchParams.get('page') || '1');
+
+// 再改成
+const page = Number(url.searchParams.get('page')) || 1;
+```
+
+**結果**：全部失敗，`pageParam` 永遠是 `null`
+
+### 嘗試 2：使用 request 物件
+
+```typescript
+export const GET: APIRoute = async ({ request }) => {
+  const url = new URL(request.url);
+  const page = url.searchParams.get('page');
+  console.log('Request URL:', request.url);
+  // 輸出：http://localhost:4321/api/posts.json（沒有參數！）
+};
+```
+
+**結果**：URL 中根本沒有查詢參數
+
+### 嘗試 3：Context 參數實驗
+
+```typescript
+export const GET: APIRoute = async (context) => {
+  // 嘗試從 context 的各種屬性獲取
+  const url = new URL(context.request.url);
+  const params = context.url.searchParams;
+  // ...各種組合
+};
+```
+
+**結果**：徒勞無功
+
+### 除錯日誌的困惑
+
+```bash
+# curl 測試
+curl "http://localhost:4321/api/posts.json?page=2&limit=6"
+
+# 服務器日誌
+API Params: { pageParam: null, limitParam: null, page: 1, limit: 6 }
+Request URL: http://localhost:4321/api/posts.json  # 參數消失了！
+```
+
+## 第三章：真相大白 - SSG vs SSR 的本質差異
+
+### 關鍵發現
+
+查閱 Astro 文檔後發現了關鍵資訊：
+
+<Card>
+**Astro 默認是靜態站點生成器（SSG）**
+
+在構建時，所有頁面和 API 路由都會被預渲染成靜態文件。這意味著 API 路由在構建時就已經執行，而不是在請求時執行。
+</Card>
+
+### 問題的根源
+
+```javascript
+// astro.config.mjs - 默認配置
+export default defineConfig({
+  // output: 'static', // 這是默認值，通常不寫
+  integrations: [...]
+});
+```
+
+在 `static` 模式下：
+1. `npm run build` 時，Astro 會執行 API 路由
+2. 生成靜態的 JSON 文件（如 `/api/posts.json`）
+3. 運行時只是提供靜態文件，不執行任何程式碼
+4. 查詢參數被完全忽略
+
+### 為什麼開發環境也有問題？
+
+即使在 `npm run dev` 下，Astro 也會模擬生產環境的行為，預渲染 API 路由以保持一致性。
+
+## 第四章：正確的解決方案 - Hybrid 模式
+
+### 步驟 1：啟用 Hybrid 模式
+
+```javascript
+// astro.config.mjs
+export default defineConfig({
+  output: 'hybrid', // 關鍵改變！
+  site: 'https://your-site.com',
+  integrations: [mdx(), sitemap(), react(), tailwind()],
+});
+```
+
+### 步驟 2：設置 API 為動態渲染
+
+```typescript
+// src/pages/api/posts.json.ts
+import type { APIRoute } from 'astro';
+
+// 告訴 Astro 這個路由需要在服務器端執行
+export const prerender = false;
+
+export const GET: APIRoute = async ({ url }) => {
+  // 現在可以正確獲取參數了！
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = parseInt(url.searchParams.get('limit') || '6');
+  
+  console.log('Parsed params:', { page, limit });
+  // 輸出：{ page: 2, limit: 6 } ✅
+};
+```
+
+### 驗證修復
+
+```bash
+# 測試 API
+curl "http://localhost:4321/api/posts.json?page=2&limit=6"
+
+# 返回結果
+{
+  "currentPage": 2,  # 正確！
+  "posts": [...],     # 第 7-9 篇文章
+  "hasMore": false
+}
+```
+
+## 第五章：Astro 三種輸出模式的比較
+
+### 1. Static（默認）
+
+```javascript
+output: 'static' // 或不設置
+```
+
+- **特點**：所有內容在構建時生成
+- **部署**：可部署到任何靜態主機（GitHub Pages、Netlify、Vercel）
+- **性能**：最快，純靜態文件
+- **限制**：無法處理動態請求、無法使用查詢參數
+
+### 2. Server（全動態）
+
+```javascript
+output: 'server'
+```
+
+- **特點**：所有請求都在服務器端處理
+- **部署**：需要 Node.js 運行環境
+- **性能**：較慢，每次請求都要處理
+- **優勢**：完全動態，支持所有服務器功能
+
+### 3. Hybrid（混合）
+
+```javascript
+output: 'hybrid'
+```
+
+- **特點**：默認靜態，可選擇性設置動態
+- **部署**：需要支持服務器功能的平台
+- **性能**：平衡，靜態頁面快，動態 API 靈活
+- **使用**：通過 `export const prerender = false` 控制
+
+<Alert type="info">
+**最佳實踐**：對於部落格網站，使用 Hybrid 模式最理想。文章頁面保持靜態以獲得最佳性能，API 路由設為動態以支持互動功能。
+</Alert>
+
+## 第六章：部署考量
+
+### Netlify 部署配置
+
+```toml
+# netlify.toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+```
+
+### Vercel 部署配置
+
+```json
+// vercel.json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}
+```
+
+兩個平台都完美支持 Astro 的 Hybrid 模式，會自動識別並部署服務器端功能。
+
+## 經驗總結：架構理解勝過程式碼技巧
+
+### 學到的教訓
+
+1. **先確認架構限制**：不要急著改程式碼，先理解框架的運作模式
+2. **讀文檔很重要**：Astro 文檔清楚說明了三種輸出模式的差異
+3. **開發環境會騙人**：開發環境可能模擬生產環境的限制
+4. **調試要看本質**：參數為 null 不是解析問題，是根本沒收到參數
+
+### 時間成本分析
+
+- ❌ 在錯誤方向上除錯：3 小時
+- ✅ 找到正確方案並實施：15 分鐘
+
+### 適用場景建議
+
+| 場景 | 建議模式 | 原因 |
+|------|---------|------|
+| 純展示部落格 | Static | 最佳性能，易部署 |
+| 需要搜尋、評論 | Hybrid | 平衡性能與功能 |
+| 社交平台、論壇 | Server | 高度動態互動 |
+
+## 結語：這不是 Bug，是 Feature
+
+Astro 的靜態優先設計不是缺陷，而是深思熟慮的架構選擇。它確保了：
+
+1. **默認最佳性能**：靜態文件永遠最快
+2. **漸進式增強**：需要時才使用動態功能
+3. **明確的性能成本**：動態功能需要明確選擇
+
+這次除錯經歷提醒我們：**理解工具的設計哲學，比熟記 API 更重要**。當你知道「為什麼」時，「怎麼做」就變得顯而易見。
+
+下次當 API 不接收參數時，不要急著改程式碼，先問問自己：**這個 API 是靜態的還是動態的？**
+
+<Alert type="success">
+**最終成果**：無限滾動完美運作，初始載入 6 篇，滾動載入剩餘 3 篇，沒有重複，體驗流暢。
+</Alert>
+
+---
+
+*除錯時間：2025年8月14日凌晨*  
+*框架版本：Astro 4.x*  
+*解決方案：從 Static 改為 Hybrid 模式*

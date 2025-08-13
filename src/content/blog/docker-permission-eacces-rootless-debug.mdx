@@ -1,0 +1,303 @@
+---
+title: Docker 開發權限問題除錯日誌：從 EACCES 到 Rootless 模式的完整分析
+description: 記錄從 AI 代理遇到的 Vite 權限錯誤，層層深入探究 Docker Volume 映射問題，最終觸及容器安全最佳實踐的完整除錯歷程
+pubDate: 2025-08-13
+author: Lin
+tags: ['Docker', 'Node.js', 'Vite', 'Permission Denied', 'AI Agent', 'Claude', 'EACCES', 'Rootless', '容器安全']
+category: 技術筆記
+excerpt: 一個 AI 代理的執行失敗，牽出了 Docker Volume 映射的權限陷阱。從臨時修復到根本解決，這是一次對容器安全實踐的深度探索
+draft: false
+---
+
+## 📝 前言
+
+本次除錯的起因頗具戲劇性：我嘗試讓「Claude Code AI Agent」幫我執行專案開發任務，結果這位數位助手在啟動 Vue.js 開發伺服器時，被一個 `EACCES: permission denied` 錯誤無情地擋下了。
+
+AI 代理困惑地對我說：「我無法刪除這些快取檔案，它們好像不屬於我。」這不禁讓我想起科幻電影裡機器人遇到權限障礙的場景，只不過這次是真實發生在我的開發環境裡。
+
+<br />
+
+---
+
+<br />
+
+## 🔴 問題背景：當 AI 代理遇上權限高牆
+
+### 問題描述
+
+AI 代理嘗試執行的指令看起來再普通不過：
+
+```bash
+cd /home/one123/projects/badminton-forum/badminton-forum-vue && npm run dev
+```
+
+但回應卻是一連串的紅色錯誤：
+
+```bash
+error when starting dev server:
+Error: EACCES: permission denied, unlink '.../node_modules/.vite/deps/@tiptap_core.js'
+```
+
+這就像是 AI 助手想要幫我整理房間，卻發現某些抽屜被上了鎖，而鑰匙不在它手上。
+
+<br />
+
+### 💡 學到的第一課：錯誤的假設會帶你走遠路
+
+我的第一反應是典型的「肯定是我之前手滑了」：八成是不小心執行了 `sudo npm install`，導致部分檔案的擁有者變成了 root。
+
+使用 `ls -la` 檢查後，確實發現 `.vite/deps` 目錄的擁有者是 root。但當我檢查 bash history，卻發現我從未執行過 sudo npm 相關指令。
+
+這個發現讓我意識到：**問題的真相往往藏在意想不到的地方**。
+
+<br />
+
+---
+
+<br />
+
+## 🔍 第二章：找到真正的元兇 - Docker Volume 映射
+
+### 破案關鍵
+
+在排除了 sudo npm 的可能性後，一個關鍵線索浮現：專案目錄下有 `docker-compose.yml` 檔案。
+
+打開一看，真相大白：
+
+```yaml
+volumes:
+  - ./badminton-forum-vue:/app
+```
+
+這一行看似無害的設定，正是整個權限問題的罪魁禍首。
+
+<br />
+
+### 💡 學到的第二課：Docker 的 Volume 映射是個雙面刃
+
+問題的形成過程就像一齣精心編排的戲劇：
+
+1. **第一幕**：Docker daemon 以 root 權限運行（這是預設行為）
+2. **第二幕**：容器內的進程也以 root 身份執行（因為 Dockerfile 未指定使用者）
+3. **第三幕**：容器內的 `npm run dev` 創建了 Vite 快取檔案
+4. **第四幕**：這些檔案透過 Volume 映射同步回本地主機
+5. **終幕**：本地的普通使用者（包括 AI 代理）無法存取這些 root 擁有的檔案
+
+這就像是你請了一位超級管理員幫你整理房間，結果他把所有東西都上了只有他能開的鎖。
+
+<br />
+
+---
+
+<br />
+
+## 🛠️ 第三章：解決方案的演進與最佳實踐
+
+### 方案一：治標不治本的臨時修復
+
+最快速的解決方式，就是奪回檔案控制權：
+
+```bash
+sudo chown -R one123:one123 /home/one123/projects/badminton-forum/badminton-forum-vue/node_modules
+```
+
+這就像是請開鎖匠來把所有的鎖都換成你的。問題解決了，但下次 Docker 容器重新建立快取時，同樣的問題會再次出現。
+
+<br />
+
+### 方案二：根本性的解決方案（推薦）
+
+修改 Dockerfile，讓容器內使用非 root 使用者。這不僅解決了權限問題，更是 Docker 官方強烈推薦的安全最佳實踐。
+
+```dockerfile
+# 開發階段
+FROM node:18-alpine AS development
+
+# 設定工作目錄
+WORKDIR /app
+
+# 以 root 權限安裝全域工具
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# 複製檔案時直接設定擁有者為 node 使用者
+COPY --chown=node:node package*.json pnpm-lock.yaml* ./
+
+# === 權限切換的關鍵點 ===
+# 從此之後，所有指令都以非特權的 'node' 使用者身份執行
+USER node
+
+# 以 node 使用者身份安裝依賴
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    else npm install; fi
+
+# 複製剩餘的專案檔案
+COPY --chown=node:node . .
+
+# 開放開發伺服器端口
+EXPOSE 5173
+
+# 執行啟動指令
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+```
+
+這個方案就像是從一開始就請一位普通員工來整理房間，而不是請超級管理員。沒有特權，就沒有權限問題。
+
+<br />
+
+---
+
+<br />
+
+## 🚧 插曲：實作時的意外陷阱
+
+### 新問題浮現
+
+在確定了修改 Dockerfile 的方案後，滿懷信心地執行 `docker-compose build web`，結果又被打臉了：
+
+```bash
+> [development 6/7] RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; ...
+...
+npm error code EACCES
+npm error syscall mkdir
+npm error path /app/node_modules
+...
+npm error The operation was rejected by your operating system.
+...
+failed to solve: process "/bin/sh -c if [ -f pnpm-lock.yaml ];..." did not complete successfully: exit code: 243
+```
+
+這個錯誤讓我愣了一下：明明已經切換到 node 使用者了，怎麼還是權限問題？
+
+<br />
+
+### 💡 學到的第三課：Docker 指令的執行順序很重要
+
+問題的癥結在於一個容易忽略的細節：
+
+1. `WORKDIR /app` 在 `USER node` **之前**執行
+2. 此時的身份還是 root，所以 `/app` 目錄的擁有者是 root
+3. 切換到 node 使用者後，它無權在 root 擁有的目錄下建立 `node_modules`
+
+這就像是老闆（root）先建了一間辦公室，然後叫員工（node）進去工作，但忘了給員工辦公室的鑰匙。
+
+<br />
+
+### 最終修正方案
+
+關鍵是在切換使用者前，先把工作目錄的所有權轉移給 node：
+
+```dockerfile
+# 開發階段
+FROM node:18-alpine AS development
+
+# 設定工作目錄
+WORKDIR /app
+
+# 以 root 權限安裝需要全域安裝的工具
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# ⭐ 關鍵修正：在切換使用者前，將工作目錄的所有權賦予 node 使用者
+RUN chown -R node:node /app
+
+# 複製檔案時設定擁有者
+COPY --chown=node:node package*.json pnpm-lock.yaml* ./
+
+# 權限切換點
+USER node
+
+# 現在 node 使用者已擁有 /app 的寫入權限，可以順利安裝依賴
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    else npm install; fi
+
+# 複製剩餘的專案檔案
+COPY --chown=node:node . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+```
+
+加入這行 `RUN chown -R node:node /app` 後，`docker-compose build web` 終於順利完成了！
+
+<br />
+
+---
+
+<br />
+
+## 🎓 第四章：專家級探討 - USER 指令 vs. Rootless 模式
+
+### 用公司管理來理解兩種安全機制
+
+為了更好理解這兩種方法的差異，讓我用一個公司管理的比喻：
+
+- **Docker daemon**：公司的總經理，擁有整間公司的最高權限
+- **容器**：公司裡的一個專案小組
+- **root 使用者**：擁有萬能鑰匙的創辦人
+- **非 root 使用者**：只負責自己業務的專案經理
+
+<br />
+
+### USER 指令（容器級安全）
+
+這就像總經理（Docker daemon）依然是創辦人（root），但他明智地決定：「這個專案的所有日常工作，全部交給專案經理 node 負責。」
+
+**優點**：簡單易行，加一行 `USER node` 就能解決 99% 的問題  
+**缺點**：總經理本人還是 root，如果 Docker 本身有漏洞，風險依然存在
+
+<br />
+
+### Docker Rootless 模式（系統級安全）
+
+這個方案更徹底：直接把擁有萬能鑰匙的創辦人總經理開除了！聘請普通使用者來擔任新總經理。
+
+```bash
+# 停用系統級 Docker
+sudo systemctl disable --now docker.service
+
+# 執行 Rootless 安裝
+dockerd-rootless-setuptool.sh install
+
+# 啟動使用者級別的 Docker 服務
+systemctl --user start docker
+```
+
+**優點**：安全性達到頂峰，連 Docker daemon 都不再是風險點  
+**缺點**：設定複雜，某些進階功能會受限
+
+<br />
+
+---
+
+<br />
+
+## ✨ 最終結果與心得
+
+這次除錯過程就像是剝洋蔥，一層層深入，從表面的權限錯誤，到 Docker Volume 映射機制，再到容器安全最佳實踐。
+
+最重要的收穫不是解決了問題，而是理解了問題背後的系統設計哲學。
+
+<br />
+
+### 💡 終極領悟：安全不是額外的負擔，而是優雅的設計
+
+對於開發者而言，採用 `USER` 指令的方法已經綽綽有餘。它用最小的成本，解決了最常見的問題，同時遵循了最小權限原則。
+
+這次經驗提醒我：**當 AI 助手遇到問題時，往往能引導我們發現系統設計中的潛在風險**。AI 代理的失敗，反而成了一次寶貴的學習機會。
+
+<br />
+
+---
+
+<br />
+
+## 🎯 行動方案總結
+
+1. **立即執行**：運行 `sudo chown` 指令，讓開發繼續
+2. **永久修復**：修改 Dockerfile，加入 `USER node` 指令
+3. **重建映像**：執行 `docker-compose build` 套用變更
+4. **知識儲備**：將 Rootless 模式記錄在案，作為未來高安全需求的技術儲備
+
+從一個 AI 代理的執行失敗，到深入理解 Docker 的安全機制，這不僅是一次技術除錯，更是一次對系統設計哲學的深度思考。畢竟，最好的權限管理，就是從一開始就不需要特權。
