@@ -5,8 +5,7 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import { Image } from 'astro:assets';
 import Pagination from '../../components/Pagination.astro';
 
-// 這個頁面需要預渲染
-export const prerender = true;
+// 在 static 模式下，頁面默認就是預渲染的
 
 export async function getStaticPaths({ paginate }) {
   // 獲取所有文章並過濾草稿

@@ -3,8 +3,7 @@ import { type CollectionEntry, getCollection } from 'astro:content';
 import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
 import { render } from 'astro:content';
 
-// 文章詳情頁面需要預渲染
-export const prerender = true;
+// 在 static 模式下，頁面默認就是預渲染的
 
 export async function getStaticPaths() {
 	const posts = await getCollection('blog');
