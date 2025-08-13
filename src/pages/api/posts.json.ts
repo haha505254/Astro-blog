@@ -7,15 +7,22 @@ export const prerender = false;
 export const GET: APIRoute = async ({ url }) => {
   const page = parseInt(url.searchParams.get('page') || '1');
   const limit = parseInt(url.searchParams.get('limit') || '6');
+  const order = url.searchParams.get('order') || 'newest';
   
   console.log('URL search params:', url.searchParams.toString());
-  console.log('Parsed params:', { page, limit });
+  console.log('Parsed params:', { page, limit, order });
   
   // 獲取所有文章並過濾草稿
   const allPosts = await getCollection('blog');
   const posts = allPosts
     .filter(post => !post.data.draft)
-    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+    .sort((a, b) => {
+      // 根據 order 參數決定排序方向
+      if (order === 'oldest') {
+        return a.data.pubDate.valueOf() - b.data.pubDate.valueOf();
+      }
+      return b.data.pubDate.valueOf() - a.data.pubDate.valueOf();
+    });
   
   // 計算分頁
   const startIndex = (page - 1) * limit;
