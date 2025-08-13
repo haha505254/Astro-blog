@@ -1,4 +1,7 @@
 import React from 'react';
+import Mermaid from './Mermaid';
+
+export { Mermaid };
 
 export const Card = ({ title, children }) => {
   return (

@@ -9,7 +9,7 @@ excerpt: '花了數小時修改參數解析邏輯，最後發現問題根本不�
 draft: false
 ---
 
-import { Alert, Card } from '../../components/MDXComponents.jsx';
+import { Alert, Card, Mermaid } from '../../components/MDXComponents.jsx';
 
 ## 序章：一個看似簡單的需求
 
@@ -458,7 +458,7 @@ Netlify CDN
 
 ### 視覺化請求流程
 
-```mermaid
+<Mermaid client:load chart={`
 sequenceDiagram
     participant U as 用戶瀏覽器
     participant R as React 組件
@@ -474,7 +474,7 @@ sequenceDiagram
     A->>R: JSON: {posts: [...], hasMore: false}
     R->>R: setPosts([...old, ...new])
     R->>U: 渲染新文章到頁面
-```
+`} />
 
 ## 結語：這不是 Bug，是 Feature
 
