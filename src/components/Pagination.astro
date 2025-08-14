@@ -28,7 +28,7 @@ const pageNumbers = getPageNumbers(currentPage, totalPages);
 ---
 
 {totalPages > 1 && (
-  <nav class="flex justify-center mt-12" aria-label="分頁導航">
+  <nav class="flex flex-col items-center gap-4 mt-12" aria-label="分頁導航">
     <ul class="inline-flex items-center -space-x-px">
       <!-- 上一頁 -->
       <li>
@@ -99,5 +99,16 @@ const pageNumbers = getPageNumbers(currentPage, totalPages);
         )}
       </li>
     </ul>
+    
+    <!-- 切換到無限滾動模式 -->
+    <div class="flex items-center gap-2 text-sm">
+      <span class="text-gray-600 dark:text-gray-400">或者</span>
+      <a 
+        href="/blog"
+        class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
+      >
+        切換到無限滾動模式
+      </a>
+    </div>
   </nav>
 )}

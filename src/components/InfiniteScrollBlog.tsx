@@ -73,13 +73,11 @@ export default function InfiniteScrollBlog() {
   const jumpToOldest = async () => {
     setOrder('oldest');
     await loadPosts(1, 'oldest', true);
-    window.scrollTo({ top: 600, behavior: 'smooth' });
   };
 
   const jumpToNewest = async () => {
     setOrder('newest');
     await loadPosts(1, 'newest', true);
-    window.scrollTo({ top: 600, behavior: 'smooth' });
   };
 
   // 初始載入
